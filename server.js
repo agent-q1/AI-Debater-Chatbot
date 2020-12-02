@@ -210,7 +210,37 @@ const findPath = async function(index){
   
 }
 
+const scale = (num, in_min, in_max, out_min, out_max) => {
+  return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
+const find_weakness = async function(index) {
+
+  const session = driver.session()
+  try {
+    const result = await session.run(
+      "MATCH (a: Argument {index: $index} ) \
+       MATCH (b: Argument ) \
+       MATCH (a)-[r: RATTACK]->(b) \
+       RETURN sum(r.attackValue) as weakness ",
+      { index: index }
+    )
+  
+    const singleRecord = result.records[0]
+    const weakness  = singleRecord.get("weakness")
+    console.log("entered  asdfasdfacaecasdcsad")
+    console.log(weakness)
+    console.log(scale(weakness,0,3,0,0.5))
+    const scaled_weakness = scale(weakness,0,3,0,0.5)
+
+    
+    return scaled_weakness
+  } finally {
+    await session.close()
+  }
+  
+
+}
 
 const findNext = async function(index){
 
@@ -240,11 +270,14 @@ const findNext = async function(index){
         console.log(attackval)
 
         let tutil = await findPath(attackId)
+        let weakness = await find_weakness(attackId)
+        console.log("weakness : ")
+        console.log(weakness)
 
         console.log("tutil")
           console.log(tutil)
 
-        let util = attackval - tutil
+        let util = attackval - weakness - tutil
 
           if(util > maxutil){
             maxutil = util
@@ -263,11 +296,6 @@ const findNext = async function(index){
 
     }
 
-    // result.records.asyncForEach(record => {
-
-      
-
-    // }) 
 
     
 
@@ -438,7 +466,6 @@ io.on('connection', socket => {
     loadEmbeddings();
     
 
-    test("suhass")
     
 
     // Broadcast when a user connects
